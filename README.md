@@ -39,13 +39,13 @@ Power BI dashboard with KPIs and visuals
 
 # ML Workflow
 
-. Data cleaning & feature engineering
+* Data cleaning & feature engineering
 
-. One-hot encoding
+* One-hot encoding
 
-. Scaling numeric features
+* Scaling numeric features
 
-. Random Forest training
+* Random Forest training
 
 ### Classification metrics (AUC, F1, recall, precision)
 
@@ -53,13 +53,13 @@ Power BI dashboard with KPIs and visuals
 
 Includes:
 
-*Churn Rate KPI
+* Churn Rate KPI
 
-*Total Customers & Churned
+* Total Customers & Churned
 
-*Tenure insights
+* Tenure insights
 
-*Charges distribution
+* Charges distribution
 
 * Filters (Contract, Gender, Internet, Tenure Group)
 
