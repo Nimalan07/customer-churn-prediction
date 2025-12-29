@@ -1,30 +1,78 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
+import numpy as np
 import joblib
+import matplotlib.pyplot as plt
+import seaborn as sns
 import os
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    roc_auc_score,
+    confusion_matrix,
+    roc_curve
+)
 
 DATA_PATH = "data/processed/processed_churn.csv"
+MODEL_PATH = "models/rf_model.pkl"
+SCALER_PATH = "models/scaler.pkl"
+FEATURES_PATH = "models/features.pkl"
 
-def train_model():
-    print("Loading processed dataset...")
+OUTPUT_DIR = "reports/evaluation"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+def evaluate():
+    print("Loading artifacts...")
+
+    model = joblib.load(MODEL_PATH)
+    scaler = joblib.load(SCALER_PATH)
+    features = joblib.load(FEATURES_PATH)
+
+    print("Loading dataset...")
     df = pd.read_csv(DATA_PATH)
-    print(f"Dataset shape: {df.shape}")
-    X = df.drop("Churn", axis=1)
+
+    X = df.drop(columns=["Churn"])
     y = df["Churn"]
-    feature_list = X.columns.tolist()
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
-    model = RandomForestClassifier(n_estimators=200, max_depth=10,random_state=42)
-    print("Training model...")
-    model.fit(X_train, y_train)
-    os.makedirs("models", exist_ok=True)
-    joblib.dump(model, "models/rf_model.pkl")
-    joblib.dump(scaler, "models/scaler.pkl")
-    joblib.dump(feature_list, "models/features.pkl")
-    print("Model, scaler, and feature list saved successfully!")
+
+    X = X.reindex(columns=features, fill_value=0)
+
+    scaler_features = scaler.feature_names_in_
+    X[scaler_features] = scaler.transform(X[scaler_features])
+
+    y_pred = model.predict(X)
+    y_proba = model.predict_proba(X)[:, 1]
+
+    print("\nEvaluation Metrics")
+    print("------------------")
+    print("Accuracy :", accuracy_score(y, y_pred))
+    print("Precision:", precision_score(y, y_pred))
+    print("Recall   :", recall_score(y, y_pred))
+    print("F1 Score :", f1_score(y, y_pred))
+    print("ROC AUC  :", roc_auc_score(y, y_proba))
+
+    cm = confusion_matrix(y, y_pred)
+    plt.figure(figsize=(5,4))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+    plt.title("Confusion Matrix")
+    plt.xlabel("Predicted")
+    plt.ylabel("Actual")
+    plt.savefig(f"{OUTPUT_DIR}/confusion_matrix.png", dpi=300, bbox_inches="tight")
+    plt.show()
+
+    fpr, tpr, _ = roc_curve(y, y_proba)
+    plt.figure(figsize=(6,4))
+    plt.plot(fpr, tpr, label=f"AUC = {roc_auc_score(y, y_proba):.3f}")
+    plt.plot([0, 1], [0, 1], "k--")
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("ROC Curve")
+    plt.legend()
+    plt.savefig(f"{OUTPUT_DIR}/roc_curve.png", dpi=300, bbox_inches="tight")
+    plt.show()
+
+    print("\nEvaluation completed successfully.")
+    print(f"Plots saved to: {OUTPUT_DIR}")
 
 if __name__ == "__main__":
-    train_model()
+    evaluate()
